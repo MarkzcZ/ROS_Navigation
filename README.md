@@ -19,3 +19,8 @@ roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=￥HOME/c
 python map_navigation.py
 
 Then you can input 0/1/2/3 to navigate the turtlebot to the point.
+
+## Part 2
+To find the parking place, we set a fourth position near the aruko marker and the robot can trip to the position by entering 4. Robot also will search for the aruco maker. Then method aru_listener() is running to subscribe to "aruco_single/pose" and make the parking decision. Just running belowed command.
+
+python map_navigation.py
