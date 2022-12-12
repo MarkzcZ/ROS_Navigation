@@ -8,14 +8,16 @@ import message_filters
 from geometry_msgs.msg import PoseStamped
 
 def aru_listener():
-  sub_info_aru=rospy.Subscriber("/aruco_single/pose",PoseStamped)
-  aru_listener=message_filters.TimeSynchronizer(sub_info_aru,10)
-  aru_listener.registerCallback(aru_callback)
-
+  rospy.init_node('listenner',anonymous=False)
+  # sub_info_aru=rospy.Subscriber("/aruco_single/pose",)
+  rospy.Subscriber("aruco_single/pose",PoseStamped,aru_callback)
+  # aru_listener=message_filters.TimeSynchronizer(sub_info_aru,10)
+  # aru_listener.registerCallback(aru_callback)
+  rospy.loginfo("Pose has been received")
 
 def aru_callback(data_array):
     velocity=Twist()
-    rospy.loginfo("Pose has been received")
+    rospy.loginfo("Aru has been received")
     x_distance=data_array.pose.position.x
     z_distance=data_array.pose.position.z
 
@@ -41,6 +43,9 @@ def aru_callback(data_array):
       velocity.linear.x = 0.04
       velocity.angular.z = 0
     elif z_distance<=0.2 and z_distance>0.05:
+      velocity.linear.x = 0
+      velocity.angular.z = 0
+    else:
       velocity.linear.x = 0
       velocity.angular.z = 0
 
