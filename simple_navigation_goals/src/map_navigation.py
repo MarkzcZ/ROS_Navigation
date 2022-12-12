@@ -3,7 +3,47 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from math import radians, degrees
 from actionlib_msgs.msg import *
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point,Twist
+import message_filters
+from geometry_msgs.msg import PoseStamped
+
+def aru_listener():
+  sub_info_aru=rospy.Subscriber("/aruco_single/pose",PoseStamped)
+  aru_listener=message_filters.TimeSynchronizer(sub_info_aru,10)
+  aru_listener.registerCallback(aru_callback)
+
+
+def aru_callback(data_array):
+    velocity=Twist()
+    rospy.loginfo("Pose has been received")
+    x_distance=data_array.pose.position.x
+    z_distance=data_array.pose.position.z
+
+    #define a client for to send goal requests to the move_base server through a SimpleActionClient
+    # ac = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+
+    # #wait for the action server to come up
+    # while(not ac.wait_for_server(rospy.Duration.from_sec(5.0))):
+    #   rospy.loginfo("Waiting for the move_base action server to come up")
+    goal = MoveBaseGoal()
+
+    #set up the frame parameters
+    goal.target_pose.header.frame_id = "map"
+    goal.target_pose.header.stamp = rospy.Time.now()
+
+    if x_distance>0.1:
+      velocity.linear.x = 0.04
+      velocity.angular.z = -0.3
+    elif x_distance<-0.1:
+      velocity.linear.x = 0.04
+      velocity.angular.z = 0.3
+    elif z_distance>0.5:
+      velocity.linear.x = 0.04
+      velocity.angular.z = 0
+    elif z_distance<=0.2 and z_distance>0.05:
+      velocity.linear.x = 0
+      velocity.angular.z = 0
+
 
 
 class map_navigation():
@@ -22,6 +62,7 @@ class map_navigation():
     choice = input()
     return choice
 
+
   def __init__(self):
     # declare the coordinates of interest
     self.xCafe = -0.287
@@ -32,13 +73,16 @@ class map_navigation():
     self.yOffice2 = -1.86
     self.xOffice3 = -0.5520
     self.yOffice3 = -4.9448
+
+    self.parkpointx=1.835
+    self.parkpointy=-1.866
     self.goalReached = False
     # initiliaze
     rospy.init_node('map_navigation', anonymous=False)
+    
     choice = self.choose()
 
     if (choice == 0):
-
       self.goalReached = self.moveToGoal(self.xCafe, self.yCafe)
 
     elif (choice == 1):
@@ -53,11 +97,16 @@ class map_navigation():
 
       self.goalReached = self.moveToGoal(self.xOffice3, self.yOffice3)
 
+    elif (choice==4):
+      self.goalReached = self.moveToGoal(self.parkpointx, self.parkpointy)
+
+      
+
     if (choice!='q'):
 
       if (self.goalReached):
         rospy.loginfo("Congratulations!")
-        #rospy.spin()
+        rospy.spin()
       else:
         rospy.loginfo("Hard Luck!")
 
@@ -78,15 +127,23 @@ class map_navigation():
 
         self.goalReached = self.moveToGoal(self.xOffice3, self.yOffice3)
 
+      elif (choice==4):
+        # spin and scan
+        self.goalReached = self.moveToGoal(self.parkpointx, self.parkpointy)
+        aru_listener()
+
+
       if (choice!='q'):
 
         if (self.goalReached):
           rospy.loginfo("Congratulations!")
-          #rospy.spin()
+          rospy.spin()
+          # rospy.spin()
 
 
         else:
           rospy.loginfo("Hard Luck!")
+    
 
 
   def shutdown(self):
@@ -102,8 +159,6 @@ class map_navigation():
       #wait for the action server to come up
       while(not ac.wait_for_server(rospy.Duration.from_sec(5.0))):
               rospy.loginfo("Waiting for the move_base action server to come up")
-
-
       goal = MoveBaseGoal()
 
       #set up the frame parameters
