@@ -7,47 +7,51 @@ from geometry_msgs.msg import Point,Twist
 import message_filters
 from geometry_msgs.msg import PoseStamped
 
-def aru_listener():
-  rospy.init_node('listenner',anonymous=False)
-  # sub_info_aru=rospy.Subscriber("/aruco_single/pose",)
-  rospy.Subscriber("aruco_single/pose",PoseStamped,aru_callback)
-  # aru_listener=message_filters.TimeSynchronizer(sub_info_aru,10)
-  # aru_listener.registerCallback(aru_callback)
-  rospy.loginfo("Pose has been received")
+class aru_park():
+    def __init__(self):
+        # sub_info_aru=rospy.Subscriber("/aruco_single/pose",)
+        # aru_listener=message_filters.TimeSynchronizer(sub_info_aru,10)
+        # aru_listener.registerCallback(aru_callback)
+        self.cmd_vel=rospy.Subscriber("aruco_single/pose",PoseStamped,self.aru_callback)
+        self.pub = rospy.Publisher('/cmd_vel', Twist,queue_size=10)
+        self.velocity=Twist()
+        rospy.spin()
 
-def aru_callback(data_array):
-    velocity=Twist()
-    rospy.loginfo("Aru has been received")
-    x_distance=data_array.pose.position.x
-    z_distance=data_array.pose.position.z
+    def aru_callback(self,data_array):
+      x_distance=data_array.pose.position.x
+      z_distance=data_array.pose.position.z
+      rospy.loginfo(x_distance)
 
-    #define a client for to send goal requests to the move_base server through a SimpleActionClient
-    # ac = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+      #define a client for to send goal requests to the move_base server through a SimpleActionClient
+      # ac = actionlib.SimpleActionClient("move_base", MoveBaseAction)
 
-    # #wait for the action server to come up
-    # while(not ac.wait_for_server(rospy.Duration.from_sec(5.0))):
-    #   rospy.loginfo("Waiting for the move_base action server to come up")
-    goal = MoveBaseGoal()
+      # #wait for the action server to come up
+      # while(not ac.wait_for_server(rospy.Duration.from_sec(5.0))):
+      #   rospy.loginfo("Waiting for the move_base action server to come up")
+      goal = MoveBaseGoal()
 
     #set up the frame parameters
-    goal.target_pose.header.frame_id = "map"
-    goal.target_pose.header.stamp = rospy.Time.now()
+      goal.target_pose.header.frame_id = "map"
+      goal.target_pose.header.stamp = rospy.Time.now()
 
-    if x_distance>0.1:
-      velocity.linear.x = 0.04
-      velocity.angular.z = -0.3
-    elif x_distance<-0.1:
-      velocity.linear.x = 0.04
-      velocity.angular.z = 0.3
-    elif z_distance>0.5:
-      velocity.linear.x = 0.04
-      velocity.angular.z = 0
-    elif z_distance<=0.2 and z_distance>0.05:
-      velocity.linear.x = 0
-      velocity.angular.z = 0
-    else:
-      velocity.linear.x = 0
-      velocity.angular.z = 0
+      if x_distance>0.03:
+        self.velocity.linear.x = 0.04
+        self.velocity.angular.z = -0.3
+      elif x_distance<-0.03:
+        self.velocity.linear.x = 0.04
+        self.velocity.angular.z = 0.3
+      elif z_distance>0.3:
+        self.velocity.linear.x = 0.04
+        self.velocity.angular.z = 0
+      elif z_distance<=0.1 and z_distance>0.05:
+        self.velocity.linear.x = 0
+        self.velocity.angular.z = 0
+      else:
+        self.velocity.linear.x = 0
+        self.velocity.angular.z = 0
+
+      rospy.loginfo(self.velocity)
+      self.pub.publish(self.velocity)
 
 
 
@@ -81,6 +85,8 @@ class map_navigation():
 
     self.parkpointx=1.835
     self.parkpointy=-1.866
+
+
     self.goalReached = False
     # initiliaze
     rospy.init_node('map_navigation', anonymous=False)
@@ -105,8 +111,9 @@ class map_navigation():
     elif (choice==4):
       self.goalReached = self.moveToGoal(self.parkpointx, self.parkpointy)
 
-      
-
+    elif (choice==5):
+      aru_park()
+    
     if (choice!='q'):
 
       if (self.goalReached):
@@ -135,7 +142,11 @@ class map_navigation():
       elif (choice==4):
         # spin and scan
         self.goalReached = self.moveToGoal(self.parkpointx, self.parkpointy)
-        aru_listener()
+
+      elif (choice==5):
+        aru_park()
+
+
 
 
       if (choice!='q'):
@@ -175,8 +186,8 @@ class map_navigation():
       goal.target_pose.pose.position =  Point(xGoal,yGoal,0)
       goal.target_pose.pose.orientation.x = 0.0
       goal.target_pose.pose.orientation.y = 0.0
-      goal.target_pose.pose.orientation.z = 0.0
-      goal.target_pose.pose.orientation.w = 1.0
+      goal.target_pose.pose.orientation.z = 0.945534610194 #0
+      goal.target_pose.pose.orientation.w = 0.325521582888 #1
 
       rospy.loginfo("Sending goal location ...")
       ac.send_goal(goal)
