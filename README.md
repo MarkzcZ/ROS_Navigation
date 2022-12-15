@@ -23,4 +23,8 @@ Then you can input 0/1/2/3 to navigate the turtlebot to the point.
 ## Part 2
 To find the parking place, we set a fourth position near the aruko marker and the robot can trip to the position by entering 4. Robot also will search for the aruco maker. Then method aru_listener() is running to subscribe to "aruco_single/pose" and make the parking decision. Just running belowed command.
 
+roslaunch line_follower_turtlebot aruco_marker_finder.launch
+
 python map_navigation.py
+
+python te_aru.py
